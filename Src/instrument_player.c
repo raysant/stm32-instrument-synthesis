@@ -54,7 +54,7 @@ void instrument_player_play(void) {
 }
 
  /* Process MIDI packets and change the note according to key pressed
-  * on digital piano */
+    on digital piano */
 void USBH_MIDI_RxCallback(USBH_HandleTypeDef *phost) {
   MIDI_Packet packet;
   uint8_t *midi_ptr = &MIDI_rx_buffer[0];
@@ -65,15 +65,15 @@ void USBH_MIDI_RxCallback(USBH_HandleTypeDef *phost) {
   while (num_of_packets--) {
     /* Organize bytes in MIDI packet */
     packet.header = *(midi_ptr++);
-    packet.byte0 = *(midi_ptr++);
     packet.byte1 = *(midi_ptr++);
     packet.byte2 = *(midi_ptr++);
+    packet.byte3 = *(midi_ptr++);
 
     /* Check if MIDI packet is a Note On event */
-    if ((packet.byte0 & 0xF0) == 0x90) {
+    if ((packet.byte1 & 0xF0) == 0x90) {
       /* Get piano note pressed and corresponding delay length for the
          instrument model */
-      note_delay = note_delay_lengths[MIDI_NOTE_OFFSET - packet.byte1];
+      note_delay = note_delay_lengths[MIDI_NOTE_OFFSET - packet.byte2];
 
       if (instrument_model_change(&instrument, note_delay) != INSTRUMENT_OK) {
         Error_Handler();
@@ -92,7 +92,7 @@ void BSP_AUDIO_OUT_HalfTransfer_CallBack(void) {
 
   /* DMA has finished reading second half of audio buffer */
 void BSP_AUDIO_OUT_TransferComplete_CallBack(void) {
-  uint16_t buffer_bytes = AUDIO_CHANNELS * AUDIO_BUFFER_SIZE;
+  uint16_t buffer_bytes = instrument.buffer_len * sizeof(int16_t);
 
   section_ready = BUFFER_SECTION_SECOND_HALF;
   BSP_AUDIO_OUT_ChangeBuffer((uint16_t*)instrument.audio_ptr, buffer_bytes);
