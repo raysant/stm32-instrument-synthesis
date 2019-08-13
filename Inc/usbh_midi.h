@@ -52,9 +52,9 @@ typedef enum {
 typedef union {
   struct {
     uint8_t header;
-    uint8_t byte0;
     uint8_t byte1;
     uint8_t byte2;
+    uint8_t byte3;
   };
   /* TODO: Fix issue with endianness */
   struct {

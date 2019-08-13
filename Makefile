@@ -55,11 +55,11 @@ Drivers/BSP/cs43l22/cs43l22.c \
 Drivers/BSP/STM32F411E-Discovery/stm32f411e_discovery.c \
 Drivers/BSP/STM32F411E-Discovery/stm32f411e_discovery_audio.c \
 Src/usbh_conf.c \
-Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_core.c \
-Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c \
-Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_ioreq.c \
-Middlewares/ST/STM32_USB_Host_Library/Core/Src/usbh_pipes.c \
-Middlewares/ST/STM32_USB_Host_Library/Class/usbh_midi.c \
+Middlewares/STM32_USB_Host_Library/Core/Src/usbh_core.c \
+Middlewares/STM32_USB_Host_Library/Core/Src/usbh_ctlreq.c \
+Middlewares/STM32_USB_Host_Library/Core/Src/usbh_ioreq.c \
+Middlewares/STM32_USB_Host_Library/Core/Src/usbh_pipes.c \
+Src/usbh_midi.c \
 Src/instrument_model.c \
 Src/instrument_player.c
 
@@ -121,14 +121,13 @@ C_INCLUDES =  \
 -IInc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
--IMiddlewares/ST/STM32_Audio/Addons/PDM/Inc \
+-IMiddlewares/STM32_Audio/Addons/PDM/Inc \
 -IDrivers/CMSIS/Include \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/BSP/Components/Common \
 -IDrivers/BSP/cs43l22 \
 -IDrivers/BSP/STM32F411E-Discovery \
--IMiddlewares/ST/STM32_USB_Host_Library/Core/Inc \
--IMiddlewares/ST/STM32_USB_Host_Library/Class
+-IMiddlewares/STM32_USB_Host_Library/Core/Inc \
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
