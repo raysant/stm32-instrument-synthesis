@@ -1,6 +1,3 @@
 #ignore visual studio files
 .vscode
 stm32-instrument-synthesis.code-workspace
-
-#ignore STMicroelectronics linker script
-STM32F411VETx_FLASH.ld
