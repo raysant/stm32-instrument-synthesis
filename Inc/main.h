@@ -25,6 +25,6 @@
 #include "usbh_midi.h"
 #include "instrument_player.h"
           
-void Error_Handler(void);
+void error_handler(void);
 
 #endif /* __MAIN_H */
