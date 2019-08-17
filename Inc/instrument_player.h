@@ -27,7 +27,9 @@
 #define SAMPLE_FREQUENCY  44100U
 #define RX_BUFFER_SIZE    64U
 
-extern void Error_Handler(void);
+extern uint8_t midi_rx_buffer[RX_BUFFER_SIZE];
+
+extern void error_handler(void);
 
 void instrument_player_init(void);
 void instrument_player_play(void);
