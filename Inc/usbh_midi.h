@@ -20,11 +20,14 @@
 
 #include "usbh_core.h"
 
-#define USB_AUDIO_CLASS               0x01
-#define USB_MIDISTREAMING_SUBCLASS    0x03
-#define USBH_MIDI_CLASS               &MIDI_class
+#define USB_AUDIO_CLASS             0x01
+#define USB_MIDISTREAMING_SUBCLASS  0x03
+#define USBH_MIDI_CLASS             &midi_class
 
-extern USBH_ClassTypeDef MIDI_class;
+#define GET_CN(HDR)   ((uint8_t)(HDR) >> 0x4U)
+#define GET_CIN(HDR)  ((uint8_t)(HDR) & 0xFU)
+
+extern USBH_ClassTypeDef midi_class;
 
 /* MIDI Code Index Numbers (CIN) */
 typedef enum {
@@ -46,25 +49,12 @@ typedef enum {
   SINGLE_BYTE_MSG
 } MIDI_EventTypeDef;
 
-/* Basic MIDI packet contents. A generic struct for
-   MIDI messages, and another struct specifically for 
-   NoteOn/NoteOff events */
-typedef union {
-  struct {
-    uint8_t header;
-    uint8_t byte1;
-    uint8_t byte2;
-    uint8_t byte3;
-  };
-  /* TODO: Fix issue with endianness */
-  struct {
-    uint8_t cin:4;
-    uint8_t cn:4;
-    uint8_t channel:4;
-    uint8_t event:4;
-    uint8_t key;
-    uint8_t velocity;
-  };
+/* Basic MIDI packet structure */
+typedef struct {
+  uint8_t header;
+  uint8_t byte1;
+  uint8_t byte2;
+  uint8_t byte3;
 } MIDI_Packet;
 
 /* States for MIDI host state machine */
@@ -83,7 +73,8 @@ typedef enum {
   MIDI_RECEIVE_DATA_WAIT
 } MIDI_DataStateTypeDef;
 
-/* States for standard and MIDI class requests */
+/* States for standard and 
+   class-specific requests */
 typedef enum {
   MIDI_REQ_INIT = 0,
   MIDI_REQ_IDLE
@@ -104,28 +95,21 @@ typedef struct {
   MIDI_DataItfTypeDef   data_itf;
   MIDI_StateTypeDef     state;
   MIDI_ReqStateTypeDef  req_state;
-  uint8_t               *ptr_tx_data;
-  uint8_t               *ptr_rx_data;
+  uint8_t               *tx_data_p;
+  uint8_t               *rx_data_p;
   uint16_t              tx_data_length;
   uint16_t              rx_data_length;
   MIDI_DataStateTypeDef tx_data_state;
   MIDI_DataStateTypeDef rx_data_state;
 } MIDI_HandleTypeDef;
 
-uint16_t USBH_MIDI_GetLastRxDataSize(USBH_HandleTypeDef *phost);
+uint16_t usbh_midi_last_rx_size(USBH_HandleTypeDef *phost);
+USBH_StatusTypeDef usbh_midi_stop(USBH_HandleTypeDef *phost);
+USBH_StatusTypeDef usbh_midi_transmit(USBH_HandleTypeDef *phost, uint8_t *pbuff, uint32_t length);
+USBH_StatusTypeDef usbh_midi_receive(USBH_HandleTypeDef *phost, uint8_t *pbuff, uint32_t length);
 
-USBH_StatusTypeDef USBH_MIDI_Stop(USBH_HandleTypeDef *phost);
-
-USBH_StatusTypeDef USBH_MIDI_Transmit(USBH_HandleTypeDef *phost,
-                                uint8_t *pbuff,
-                                uint32_t length);
-
-USBH_StatusTypeDef USBH_MIDI_Receive(USBH_HandleTypeDef *phost,
-                                uint8_t *pbuff,
-                                uint32_t length);
-
-void USBH_MIDI_TxCallback(USBH_HandleTypeDef *phost);
-
-void USBH_MIDI_TxCallback(USBH_HandleTypeDef *phost);
+/* User implemented functions */
+void usbh_midi_tx_callback(USBH_HandleTypeDef *phost);
+void usbh_midi_rx_callback(USBH_HandleTypeDef *phost);
 
 #endif /* __USBH_MIDI_H */
