@@ -1,3 +1,2 @@
-#ignore visual studio files
+#ignore visual studio code files
 .vscode
-stm32-instrument-synthesis.code-workspace
