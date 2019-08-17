@@ -30,102 +30,104 @@ InstrumentStatus instrument_model_init(InstrumentModel *model, uint16_t delay) {
   }
 
   /* Initialize values for instrument */
-  model->audio_ptr = &audio_buffer[0];
+  model->audio_p = &audio_buffer[0];
   model->buffer_len = sizeof(audio_buffer) / sizeof(int16_t);
   model->max_delay = delay;
   model->section_done = BUFFER_SECTION_NONE;
 
   /* Initialize values for model's memory (circular) buffer */
-  model->past_vals.mem_ptr = &mem_buffer[0];
-  model->past_vals.mem_len = sizeof(mem_buffer) / sizeof(int16_t);
-  model->past_vals.rw_index = 0;
+  model->memory.mem_p = &mem_buffer[0];
+  model->memory.mem_len = sizeof(mem_buffer) / sizeof(int16_t);
+  model->memory.rw_index = 0;
 
   return INSTRUMENT_OK;
 }
 
 /* Generate an excitation signal for the instrument and store it
    in the instrument's memory */
-static InstrumentStatus instrument_model_excite(InstrumentModel *model, int16_t *buffer_ptr) {
-  uint32_t loop_count = model->max_delay;
+__STATIC_INLINE void instrument_model_excite(InstrumentModel *model, uint32_t delay) {
+  uint32_t index_limit = model->memory.mem_len - 1;
   float rand_num = 0.0f;
 
-  while (loop_count--) {
+  while (delay--) {
     rand_num = 2.0f * MAX_AMPLITUDE * ((float)rand() / (float)(RAND_MAX)) - 1.0f;
 
-    *(buffer_ptr++) = (int16_t)rand_num;
+    /* Start from the last read/write position and watch for 
+       when the buffer wraps around */
+    model->memory.mem_p[model->memory.rw_index] = rand_num;
+    model->memory.rw_index = (model->memory.rw_index + 1) & index_limit;
   }
-
-  return INSTRUMENT_OK;
 }
 
 /* Use the LPF for the Karplus-Strong algorithm and store the result into
    the current position in the audio buffer */
-__STATIC_INLINE void instrument_model_filter(InstrumentModel *model, int16_t *buffer_ptr) {
-  int16_t *mem_ptr = model->past_vals.mem_ptr;
-  int32_t index_limit = model->past_vals.mem_len - 1;
-  int32_t delay_index;
+__STATIC_INLINE void instrument_model_filter(InstrumentModel *model, int16_t *pbuffer) {
+  int16_t *mem_p = model->memory.mem_p;
+  uint32_t index_limit = model->memory.mem_len - 1;
+  uint32_t delay_index;
   float past_val1;
   float past_val2;
   int16_t result;
 
   /* y[n] = 0.5 * ( y[n-D] + y[n-D-1] ) */
-  delay_index = model->past_vals.rw_index - model->max_delay;
-  past_val1 = (float)mem_ptr[delay_index & index_limit];
-  past_val2 = (float)mem_ptr[(delay_index-1) & index_limit];
+  delay_index = model->memory.rw_index - model->max_delay;
+  past_val1 = (float)mem_p[delay_index & index_limit];
+  past_val2 = (float)mem_p[(delay_index-1) & index_limit];
   result = (int16_t)(0.5f * (past_val1 + past_val2));
 
-  *buffer_ptr = result;
+  *pbuffer = result;
 #if (AUDIO_CHANNELS == 2)
-  *(++buffer_ptr) = result;
+  *(pbuffer + 1) = result;
 #endif
 
   /* Store result in the memory and update the read/write index */
-  mem_ptr[model->past_vals.rw_index] = result;
-  model->past_vals.rw_index = (model->past_vals.rw_index + 1) & index_limit;
+  mem_p[model->memory.rw_index] = result;
+  model->memory.rw_index = (model->memory.rw_index + 1) & index_limit;
 }
 
 /* Check if the current buffer section needs to be processed */
 InstrumentStatus instrument_model_process(InstrumentModel *model) {
-  int16_t *buffer_ptr = NULL;
+  BufferSection section_ready_cpy = section_ready;
+  int16_t *buffer_p = NULL;
   uint32_t loop_count = 0;
 
-  if (model->section_done != section_ready) {
+  if (model == NULL) {
+    return INSTRUMENT_ERROR;
+  }
+
+  if (model->section_done != section_ready_cpy) {
     loop_count = AUDIO_BUFFER_SIZE / 2;
 
     if (section_ready == BUFFER_SECTION_FIRST_HALF) {
       /* Start at the beginning of the first buffer section */
-      buffer_ptr = model->audio_ptr;
+      buffer_p = model->audio_p;
     } else {
       /* Start at the beginning of the second buffer section */
-      buffer_ptr = model->audio_ptr + (AUDIO_CHANNELS * AUDIO_BUFFER_SIZE / 2);
+      buffer_p = model->audio_p + (AUDIO_CHANNELS * AUDIO_BUFFER_SIZE / 2);
     }
 
     while (loop_count--) {
       /* Apply the filter to the current buffer section */
-      instrument_model_filter(model, buffer_ptr);
-      buffer_ptr += AUDIO_CHANNELS;
+      instrument_model_filter(model, buffer_p);
+      buffer_p += AUDIO_CHANNELS;
     }
+    model->section_done = section_ready_cpy;
   }
 
   return INSTRUMENT_OK;
 }
 
-/*  Update the instrument model's properties */
+/* Update the instrument model's properties */
 InstrumentStatus instrument_model_change(InstrumentModel *model, uint16_t delay) {
-  uint32_t byte_size;
+  if (model == NULL) {
+    return INSTRUMENT_ERROR;
+  }
 
   model->max_delay = delay;
   model->section_done = BUFFER_SECTION_NONE;
 
-  /* Place the read/write index at the end of excitation signal */
-  model->past_vals.rw_index = delay;
-
   /* Store the excitation signal into the memory buffer */
-  instrument_model_excite(model, model->past_vals.mem_ptr);
-
-  /* Set remaining instrument's memory to 0 */
-  byte_size = sizeof(int16_t) * (model->past_vals.mem_len - delay);
-  memset(model->past_vals.mem_ptr + delay, 0, byte_size);
+  instrument_model_excite(model, delay);
 
   return INSTRUMENT_OK;
 }

@@ -43,20 +43,22 @@ typedef enum {
 /* Structure to hold past values for the
    instrument model */
 typedef struct {
-  int16_t  *mem_ptr;
+  int16_t *mem_p;
   uint16_t mem_len;
-  int16_t  rw_index;
+  uint16_t rw_index;
 } ModelMemory;
 
 /* Structure for storing the instrument
    model's properties */
 typedef struct {
-  int16_t       *audio_ptr;
-  uint16_t      buffer_len;
-  uint16_t      max_delay;
-  ModelMemory   past_vals;
+  int16_t *audio_p;
+  uint16_t buffer_len;
+  uint16_t max_delay;
+  ModelMemory memory;
   BufferSection section_done;
 } InstrumentModel;
+
+extern volatile BufferSection section_ready;
 
 InstrumentStatus instrument_model_init(InstrumentModel *model, uint16_t delay);
 InstrumentStatus instrument_model_process(InstrumentModel *model);
