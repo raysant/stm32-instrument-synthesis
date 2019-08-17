@@ -26,7 +26,7 @@
    e.g. Pressing A4 on the digital piano will produce a MIDI message with
    key number 69. The delay needed to produce A4 with the Karplus-Strong
    algorithm will be at index (MIDI_NOTE_OFFSET - 69) = 39. */
-static const uint16_t note_delay_lengths[] = {
+static const uint16_t note_delay_lengths[88] = {
   10,   11,   11,   12,   13,   14,   14,   15,
   16,   17,   18,   19,   21,   22,   23,   25,
   26,   28,   29,   31,   33,   35,   37,   39,
@@ -37,7 +37,7 @@ static const uint16_t note_delay_lengths[] = {
   267,  283,  300,  318,  337,  357,  378,  400,
   424,  450,  476,  505,  535,  566,  600,  636,
   674,  714,  756,  801,  849,  900,  953,  1010,
-  1070, 1133, 1201, 1272, 1348, 1428, 1513, 1603,
+  1070, 1133, 1201, 1272, 1348, 1428, 1513, 1603
 };
 
 #endif /* __DELAY_LENGTHS_H */
