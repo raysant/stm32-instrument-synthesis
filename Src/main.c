@@ -32,7 +32,6 @@ int main(void) {
   system_clock_config();
   
   /* Initialize user button and LEDs */
-  BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_GPIO);
   BSP_LED_Init(LED3);
   BSP_LED_Init(LED4);
 
