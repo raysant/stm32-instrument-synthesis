@@ -98,7 +98,7 @@ InstrumentStatus instrument_model_process(InstrumentModel *model) {
   if (model->section_done != section_ready_cpy) {
     loop_count = AUDIO_BUFFER_SIZE / 2;
 
-    if (section_ready == BUFFER_SECTION_FIRST_HALF) {
+    if (section_ready_cpy == BUFFER_SECTION_FIRST_HALF) {
       /* Start at the beginning of the first buffer section */
       buffer_p = model->audio_p;
     } else {
