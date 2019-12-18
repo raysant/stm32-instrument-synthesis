@@ -5,9 +5,9 @@ Instrument synthesis on STM32 microcontroller. A USB-MIDI host driver is include
 <!--- *************************************************************************************************** --->
 
 ## How it works
-The audio data is stored in a ping-pong buffer so that one half of the buffer can be processed by the CPU while the DMA controller transfers data from the other half to the audio codec. The CPU calculates the audio data using the instrument model, then processes the USB-MIDI messages to see if a new note should be played. Once the CPU and the DMA controller complete their tasks, they switch buffer sections.
+The audio data is stored in a ping-pong buffer so that one half of the buffer can be processed by the CPU while the DMA controller transfers data from the other half to the audio codec. The CPU calculates the audio data using the instrument model and then processes the USB-MIDI messages to see if a new note should be played. Once the CPU and the DMA controller complete their tasks, they switch buffer sections.
 
-The number of individual audio samples in the buffer, `AUDIO_BUFFER_SIZE`, should be the smallest power of 2 >= twice the largest delay for the instrument model. To play the lowest note on a MIDI keyboard, the longest delay needed (with the Karplus-Strong model) is 1603, therefore `AUDIO_BUFFER_SIZE` should be `4096`. For stereo audio, `AUDIO_CHANNELS` is set to `2` so that each audio sample can be repeated.
+To simplify some calculations, `AUDIO_BUFFER_SIZE` should be the smallest power of 2 that is greater than or equal to twice the largest delay for the instrument model. The Karplus-Strong model would need, at most, a delay of 1603 for the lowest playable note on any MIDI keyboard. For this demo, `AUDIO_BUFFER_SIZE` is set to `4096` and `AUDIO_CHANNELS` is set to `2` to indicate that each sample should be repeated to produce stereo audio.
 
 ```c
 static int16_t audio_buffer[AUDIO_CHANNELS * AUDIO_BUFFER_SIZE];
@@ -15,24 +15,24 @@ static int16_t audio_buffer[AUDIO_CHANNELS * AUDIO_BUFFER_SIZE];
 
 
 ### Karplus-Strong algorithm
-One of my goals for this project is to easily simulate a musical instrument on an embedded system with the aid of a mathematical model. As a prerequisite for this, I decided to start with a simple model and go from there (possibly until I reach the limit on what the hardware is capable of). Consequently, the code in its current state is somewhat coupled to the [Karplus-Strong algorithm](https://en.wikipedia.org/wiki/Karplus%E2%80%93Strong_string_synthesis) (shown below), so implementing another model is not straightforward.
+This goal for this project is to make it easier to experiment with instrument models using an already familiar musical interface like the MIDI keyboard. As a starting point and for demo purposes, I decided to use a simple model. Consequently, the code in its current state is somewhat coupled to the [Karplus-Strong algorithm](https://en.wikipedia.org/wiki/Karplus%E2%80%93Strong_string_synthesis) (shown below), so  implementing another model is not as straightforward as I would like.
 
 <br/>
 <p align="center">
-<img src="https://ccrma.stanford.edu/~jos/pasp/img1974.png" />
+<img src="Images/ks_algorithm.png" />
 </p>
 <p align="center">
 <em align="center">Source: <a href="https://ccrma.stanford.edu/~jos/pasp/Karplus_Strong_Algorithm.html">https://ccrma.stanford.edu/~jos/pasp/Karplus_Strong_Algorithm.html</a></em>
 </p>
 
 
-### Storing past values
+### The delay line
 
-<p align="center"><img src="circular_buffer.png" /></p>
+<p align="center"><img src="Images/circular_buffer.png" /></p>
 
-The past values for the model are stored in a separate array from the audio data. This array is utilized in a similar way to a circular buffer, except that the read and write positions are the same, and data is not removed after reading. Everytime a new `y[n]` is calculated, the read/write position is incremented and the oldest value is overwritten by the newest value.
+The `L` most recent audio samples are stored in a circular buffer that is separate from the audio buffer. Writing to this buffer results in the oldest sample being overwritten by the most recent sample, and reading from this buffer is non-destructive (i.e. the value being read is not discarded afterwards).
 
-Just like the audio buffer, the size of this array is dependent on the largest delay needed. However, we do not require a ping-pong buffer or repeating values for this array so we can just use `AUDIO_BUFFER_SIZE / 2`.
+Just like the audio buffer, the size of this array is dependent on the largest delay needed. However, we do not require a ping-pong buffer or multiple audio channels for this array so we can just use `AUDIO_BUFFER_SIZE / 2`.
 
 ```c
 static int16_t mem_buffer[AUDIO_BUFER_SIZE / 2];
